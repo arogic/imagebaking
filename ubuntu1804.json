@@ -1,0 +1,72 @@
+{
+  "_comment": "Build with `packer build -var-file=ubuntu1804.json ubuntu.json`",
+  "variables": {
+    "boot_command_prefix": "<esc><esc><enter><wait>",
+    "cpus": "1",
+    "locale": "en_GB",
+    "memory": "512",
+    "no_proxy": "{{env `no_proxy`}}",
+    "preseed" : "preseed.cfg",
+    "rsync_proxy": "{{env `rsync_proxy`}}",
+    "hostname": "ubuntu1804",
+    "ssh_fullname": "ansible",
+    "ssh_password": "ansible",
+    "ssh_username": "ansible"
+  },
+  "builders":
+  [
+    {
+      "type": "qemu",
+      "iso_url": "http://cdimage.ubuntu.com/ubuntu/releases/18.04/release/ubuntu-18.04.4-server-amd64.iso",
+      "iso_checksum": "e2ecdace33c939527cbc9e8d23576381c493b071107207d2040af72595f8990b",
+      "iso_checksum_type": "sha256",
+      "output_directory": "output_image",
+      "shutdown_command": "echo '{{ user `ssh_password` }}'|sudo -S shutdown -P now",
+      "disk_size": 5000,
+      "format": "raw",
+      "headless": true,
+      "accelerator": "kvm",
+      "http_directory": "httpdir",
+      "http_port_min": 10082,
+      "http_port_max": 10089,
+      "ssh_host_port_min": 2222,
+      "ssh_host_port_max": 2229,
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "900m",
+      "vm_name": "ubuntu1804.img",
+      "net_device": "virtio-net",
+      "disk_interface": "virtio",
+      "boot_wait": "5s",
+      "qemuargs": [
+        [ "-m", "{{ user `memory` }}" ],
+        [ "-display", "none" ],
+        [ "-machine", "accel=kvm" ],
+        [ "-cpu", "host" ],
+        [ "-smp", "cpus={{ user `cpus`}}"]
+      ],
+
+      "boot_command":
+      [
+        "{{ user `boot_command_prefix` }}",
+        "/install/vmlinuz noapic ",
+        "file=/floppy/{{ user `preseed` }} ",
+        "debian-installer={{ user `locale` }} auto locale={{ user `locale` }} kbd-chooser/method=us ",
+        "hostname={{ user `hostname` }} ",
+        "fb=false debconf/frontend=noninteractive ",
+        "keyboard-configuration/modelcode=SKIP ",
+        "keyboard-configuration/layout=gb ",
+        "keyboard-configuration/variant= console-setup/ask_detect=false ",
+        "passwd/user-fullname={{ user `ssh_fullname` }} ",
+        "passwd/user-password={{ user `ssh_password` }} ",
+        "passwd/user-password-again={{ user `ssh_password` }} ",
+        "passwd/username={{ user `ssh_username` }} ",
+        "initrd=/install/initrd.gz -- <enter>"
+      ],
+      "floppy_files": [
+        "httpdir/{{ user `preseed` }}"
+      ]
+    }
+  ]
+}
